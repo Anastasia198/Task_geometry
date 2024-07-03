@@ -1,0 +1,579 @@
+// Определяем абстрактный класс для всех фигур на плоскости
+abstract class Shape {
+    // Получение точки центра фигуры
+    abstract Point getCenter();
+    // Получение периметра фигуры
+    abstract double getPerimeter();
+    // Получение площади фигуры
+    abstract double getArea();
+    // Перемещение фигуры в новую точку
+    abstract void move(Point newCenter);
+    // Поворот фигуры на заданный угол
+    abstract void rotate(double angle);
+    // Масштабирование фигуры с заданным коэффициентом
+    abstract void scale(double factor);
+}
+
+// Класс точки на плоскости
+class Point {
+    double x, y;
+
+    Point(double x, double y) {
+        this.x = x;
+        this.y = y;
+    }
+}
+
+// Класс Ellipse
+class Ellipse extends Shape {
+    private Point focus1, focus2;
+    private double perifocalDistance;
+    private double rotationAngle;
+
+  
+    public Ellipse(Point focus1, Point focus2, double perifocalDistance) {
+        this.focus1 = focus1;
+        this.focus2 = focus2;
+        this.perifocalDistance = perifocalDistance;
+        this.rotationAngle = 0;
+    }
+
+    // Получение фокусов 
+    public Point[] getFoci() {
+        return new Point[] { focus1, focus2 };
+    }
+
+    // Расчет расстояния от фокуса до центра эллипса
+    public double getDistanceFromFocusToCenter() {
+        return getDistanceBetweenPoints(focus1, getCenter()) / 2;
+    }
+
+    // Расчет большой полуоси
+    public double getMajorAxis() {
+        double distanceBetweenFoci = getDistanceBetweenPoints(focus1, focus2);
+        return (distanceBetweenFoci + 2 * perifocalDistance) / 2;
+    }
+
+    // Расчет малой полуоси
+    public double getMinorAxis() {
+        double majorAxis = getMajorAxis();
+        double distanceBetweenFoci = getDistanceBetweenPoints(focus1, focus2);
+        return Math.sqrt(Math.pow(majorAxis, 2) - Math.pow(distanceBetweenFoci / 2, 2));
+    }
+
+    // Расчет эксцентриситета
+    public double getEccentricity() {
+        double distanceBetweenFoci = getDistanceBetweenPoints(focus1, focus2);
+        double majorAxis = getMajorAxis();
+        return distanceBetweenFoci / (2 * majorAxis);
+    }
+
+   
+    @Override
+    public Point getCenter() {
+        return new Point((focus1.x + focus2.x) / 2, (focus1.y + focus2.y) / 2);
+    }
+
+    @Override
+    public double getPerimeter() {
+        double a = getMajorAxis();
+        double b = getMinorAxis();
+        return Math.PI * (3 * (a + b) - Math.sqrt((3 * a + b) * (a + 3 * b)));
+    }
+
+    @Override
+    public double getArea() {
+        return Math.PI * getMajorAxis() * getMinorAxis();
+    }
+
+    @Override
+    public void move(Point newCenter) {
+        Point currentCenter = getCenter();
+        double dx = newCenter.x - currentCenter.x;
+        double dy = newCenter.y - currentCenter.y;
+
+        focus1.x += dx;
+        focus1.y += dy;
+        focus2.x += dx;
+        focus2.y += dy;
+    }
+
+    @Override
+    public void rotate(double angle) {
+        rotationAngle += angle;
+    }
+
+    @Override
+    public void scale(double factor) {
+        perifocalDistance *= factor;
+    }
+
+    // Вспомогательный метод для вычисления расстояния между двумя точками
+    private double getDistanceBetweenPoints(Point p1, Point p2) {
+        return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
+    }
+}
+
+// Класс Circle
+class Circle extends Shape {
+    private Point center;
+    private double radius;
+
+    public Circle(Point center, double radius) {
+        this.center = center;
+        this.radius = radius;
+    }
+
+    public double getRadius() {
+        return radius;
+    }
+
+    @Override
+    public Point getCenter() {
+        return center;
+    }
+
+    @Override
+    public double getPerimeter() {
+        return 2 * Math.PI * radius;
+    }
+
+    @Override
+    public double getArea() {
+        return Math.PI * radius * radius;
+    }
+
+    @Override
+    public void move(Point newCenter) {
+        this.center = newCenter;
+    }
+
+    @Override
+    public void rotate(double angle) {
+        // Вращение не влияет на окружноть, поэтому оставляем метод пустым
+    }
+
+    @Override
+    public void scale(double factor) {
+        this.radius *= factor;
+    }
+}
+
+// Класс Rectangle
+class Rectangle extends Shape {
+    private Point upperLeft;
+    private Point lowerRight;
+    private double height;
+    private Point center;
+
+    Rectangle(Point upperLeft, Point lowerRight, double height) {
+        this.upperLeft = upperLeft;
+        this.lowerRight = lowerRight;
+        this.height = height;
+        this.center = new Point(
+            (upperLeft.x + lowerRight.x) / 2,
+            (upperLeft.y + lowerRight.y) / 2
+        );
+    }
+
+    @Override
+    Point getCenter() {
+        return this.center;
+    }
+
+    @Override
+    double getPerimeter() {
+        return 2 * (getWidth() + this.height);
+    }
+
+    @Override
+    double getArea() {
+        return getWidth() * this.height;
+    }
+
+    @Override
+    void move(Point newCenter) {
+        double deltaX = newCenter.x - this.center.x;
+        double deltaY = newCenter.y - this.center.y;
+
+        this.upperLeft.x += deltaX;
+        this.upperLeft.y += deltaY;
+        this.lowerRight.x += deltaX;
+        this.lowerRight.y += deltaY;
+        this.center = newCenter;
+    }
+
+    @Override
+    void rotate(double angle) {
+      // Угол в радианах
+        double radians = Math.toRadians(angle);
+
+        // Вращение верхнего левого угла
+        double newXUpperLeft = this.center.x + (this.upperLeft.x - this.center.x) * Math.cos(radians) -
+                (this.upperLeft.y - this.center.y) * Math.sin(radians);
+        double newYUpperLeft = this.center.y + (this.upperLeft.x - this.center.x) * Math.sin(radians) +
+                (this.upperLeft.y - this.center.y) * Math.cos(radians);
+
+        // Вращение нижнего правого угла
+        double newXLowerRight = this.center.x + (this.lowerRight.x - this.center.x) * Math.cos(radians) -
+                (this.lowerRight.y - this.center.y) * Math.sin(radians);
+        double newYLowerRight = this.center.y + (this.lowerRight.x - this.center.x) * Math.sin(radians) +
+                (this.lowerRight.y - this.center.y) * Math.cos(radians);
+
+        // Обновление координат углов
+        this.upperLeft = new Point((int) newXUpperLeft, (int) newYUpperLeft);
+        this.lowerRight = new Point((int) newXLowerRight, (int) newYLowerRight);
+    }
+
+    // Масштабирование
+    @Override
+    void scale(double factor) {
+        this.height *= factor;
+        double width = getWidth() * factor;
+        this.lowerRight.x = this.upperLeft.x + width;
+        this.lowerRight.y = this.upperLeft.y - height;
+        this.center = new Point(
+            (upperLeft.x + lowerRight.x) / 2,
+            (upperLeft.y + lowerRight.y) / 2
+        );
+    }
+
+    // Метод для получения ширины прямоугольника
+    double getWidth() {
+        return this.lowerRight.x - this.upperLeft.x;
+    }
+
+    // Метод для получения высоты прямоугольника
+    double getHeight() {
+        return this.height;
+    }
+
+    // Метод для получения диагонали прямоугольника
+    double getDiagonal() {
+        return Math.sqrt(Math.pow(getWidth(), 2) + Math.pow(this.height, 2));
+    }
+}
+
+// Класс Square
+class Square extends Shape {
+    private Point topLeft;
+    private Point bottomRight;
+
+    Square(Point topLeft, Point bottomRight) {
+        this.topLeft = topLeft;
+        this.bottomRight = bottomRight;
+    }
+
+    // Метод получения стороны квадрата
+    double getSideLength() {
+        return bottomRight.x - topLeft.x;
+    }
+
+    // Метод получения вписанной окружности
+    double getInscribedCircleRadius() {
+        return getSideLength() / 2;
+    }
+
+    // Метод получения описанной окружности
+    double getCircumscribedCircleRadius() {
+        return Math.sqrt(2) * getSideLength() / 2;
+    }
+
+    @Override
+    Point getCenter() {
+        double centerX = (topLeft.x + bottomRight.x) / 2;
+        double centerY = (topLeft.y + bottomRight.y) / 2;
+        return new Point(centerX, centerY);
+    }
+
+    @Override
+    double getPerimeter() {
+        return 4 * getSideLength();
+    }
+
+    @Override
+    double getArea() {
+         return Math.pow(getSideLength(), 2);
+    }
+
+    @Override
+    void move(Point newCenter) {
+        double centerX = (topLeft.x + bottomRight.x) / 2;
+        double centerY = (topLeft.y + bottomRight.y) / 2;
+        double dx = newCenter.x - centerX;
+        double dy = newCenter.y - centerY;
+
+        topLeft.x += dx;
+        topLeft.y += dy;
+        bottomRight.x += dx;
+        bottomRight.y += dy;
+    }
+
+    @Override
+    void rotate(double angle) {
+    // Поворот квадрата вокруг его центра
+        Point center = getCenter();
+        topLeft = rotatePoint(topLeft, center, angle);
+        bottomRight = rotatePoint(bottomRight, center, angle);
+    }
+
+    private Point rotatePoint(Point p, Point center, double angle) {
+        double rad = Math.toRadians(angle);
+        double cosTheta = Math.cos(rad);
+        double sinTheta = Math.sin(rad);
+        double x = cosTheta * (p.x - center.x) - sinTheta * (p.y - center.y) + center.x;
+        double y = sinTheta * (p.x - center.x) + cosTheta * (p.y - center.y) + center.y;
+        return new Point(x, y);
+    }
+
+
+    @Override
+    void scale(double factor) {
+        Point center = getCenter();
+        double halfSide = getSideLength() / 2;
+        double newHalfSide = halfSide * factor;
+        topLeft.x = center.x - newHalfSide;
+        topLeft.y = center.y - newHalfSide;
+        bottomRight.x = center.x + newHalfSide;
+        bottomRight.y = center.y + newHalfSide;
+    }
+
+}
+
+// Класс исключения для невалидного треугольника
+class InvalidTriangleException extends Exception {
+    InvalidTriangleException(String message) {
+        super(message);
+    }
+}
+
+// Класс Triangle
+class Triangle extends Shape {
+    private Point pointA, pointB, pointC;
+    private Point center;
+
+    Triangle(Point pointA, Point pointB, Point pointC) throws InvalidTriangleException {
+        if (!isValidTriangle(pointA, pointB, pointC)) {
+            throw new InvalidTriangleException("Треугольник с указанными вершинами не существует.");
+        }
+        this.pointA = pointA;
+        this.pointB = pointB;
+        this.pointC = pointC;
+        this.center = calculateCenter();
+    }
+
+    // Метод проверки валидности треугольника
+    private boolean isValidTriangle(Point a, Point b, Point c) {
+        double ab = distance(a, b);
+        double bc = distance(b, c);
+        double ca = distance(c, a);
+        return ab + bc > ca && ab + ca > bc && bc + ca > ab;
+    }
+
+    // Метод расчета расстояния между двумя точками
+    private double distance(Point p1, Point p2) {
+        return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
+    }
+
+    // Метод расчета центра треугольника
+    private Point calculateCenter() {
+        double centerX = (pointA.x + pointB.x + pointC.x) / 3;
+        double centerY = (pointA.y + pointB.y + pointC.y) / 3;
+        return new Point(centerX, centerY);
+    }
+
+    @Override
+    Point getCenter() {
+        return center;
+    }
+
+    @Override
+    double getPerimeter() {
+        return distance(pointA, pointB) + distance(pointB, pointC) + distance(pointC, pointA);
+    }
+
+    @Override
+    double getArea() {
+        double s = getPerimeter() / 2;
+        double a = distance(pointA, pointB);
+        double b = distance(pointB, pointC);
+        double c = distance(pointC, pointA);
+        return Math.sqrt(s * (s - a) * (s - b) * (s - c));
+    }
+
+    @Override
+    void move(Point newCenter) {
+        double dx = newCenter.x - center.x;
+        double dy = newCenter.y - center.y;
+        pointA.x += dx;
+        pointA.y += dy;
+        pointB.x += dx;
+        pointB.y += dy;
+        pointC.x += dx;
+        pointC.y += dy;
+        center = newCenter;
+    }
+
+    @Override
+    void rotate(double angle) {
+        double radians = Math.toRadians(angle);
+        Point newA = rotatePoint(pointA, radians);
+        Point newB = rotatePoint(pointB, radians);
+        Point newC = rotatePoint(pointC, radians);
+        pointA = newA;
+        pointB = newB;
+        pointC = newC;
+    }
+
+    private Point rotatePoint(Point point, double radians) {
+        double translatedX = point.x - center.x;
+        double translatedY = point.y - center.y;
+        double rotatedX = translatedX * Math.cos(radians) - translatedY * Math.sin(radians);
+        double rotatedY = translatedX * Math.sin(radians) + translatedY * Math.cos(radians);
+        return new Point(rotatedX + center.x, rotatedY + center.y);
+    }
+
+    @Override
+    void scale(double factor) {
+        pointA = scalePoint(pointA, factor);
+        pointB = scalePoint(pointB, factor);
+        pointC = scalePoint(pointC, factor);
+    }
+
+    private Point scalePoint(Point point, double factor) {
+        return new Point(center.x + (point.x - center.x) * factor, center.y + (point.y - center.y) * factor);
+    }
+
+    // Метод получения списка вершин треугольника
+    public Point[] getVertices() {
+        return new Point[]{pointA, pointB, pointC};
+    }
+
+    // Метод получения центра вписанной окружности
+    public Point getIncircleCenter() {
+        double a = distance(pointB, pointC);
+        double b = distance(pointA, pointC);
+        double c = distance(pointA, pointB);
+        double perimeter = a + b + c;
+        double centerX = (a * pointA.x + b * pointB.x + c * pointC.x) / perimeter;
+        double centerY = (a * pointA.y + b * pointB.y + c * pointC.y) / perimeter;
+        return new Point(centerX, centerY);
+    }
+
+    // Метод получения радиуса вписанной окружности
+    public double getIncircleRadius() {
+        return getArea() / (getPerimeter() / 2);
+    }
+
+    // Метод получения центра описанной окружности
+    public Point getCircumcircleCenter() {
+        double d = 2 * (pointA.x * (pointB.y - pointC.y) + pointB.x * (pointC.y - pointA.y) + pointC.x * (pointA.y - pointB.y));
+        double centerX = ((Math.pow(pointA.x, 2) + Math.pow(pointA.y, 2)) * (pointB.y - pointC.y) +
+                          (Math.pow(pointB.x, 2) + Math.pow(pointB.y, 2)) * (pointC.y - pointA.y) +
+                          (Math.pow(pointC.x, 2) + Math.pow(pointC.y, 2)) * (pointA.y - pointB.y)) / d;
+        double centerY = ((Math.pow(pointA.x, 2) + Math.pow(pointA.y, 2)) * (pointC.x - pointB.x) +
+                          (Math.pow(pointB.x, 2) + Math.pow(pointB.y, 2)) * (pointA.x - pointC.x) +
+                          (Math.pow(pointC.x, 2) + Math.pow(pointC.y, 2)) * (pointB.x - pointA.x)) / d;
+        return new Point(centerX, centerY);
+    }
+
+    // Метод получения радиуса описанной окружности
+    public double getCircumcircleRadius() {
+        double a = distance(pointB, pointC);
+        double b = distance(pointA, pointC);
+        double c = distance(pointA, pointB);
+        double area = getArea();
+        return (a * b * c) / (4 * area);
+    }
+}
+
+
+public class Main {
+    public static void main(String[] args) {
+       // Эллипс
+        Point focus1 = new Point(1, 1);
+        Point focus2 = new Point(5, 1);
+        double perifocalDistance = 3;     
+        Ellipse ellipse = new Ellipse(focus1, focus2, perifocalDistance);
+        System.out.println("Центр эллипса: (" + ellipse.getCenter().x + ", " + ellipse.getCenter().y + ")");
+        System.out.println("Периметр эллипса: " + ellipse.getPerimeter());
+        System.out.println("Площадь эллипса: " + ellipse.getArea());
+        System.out.println("Фокусы эллипса: (" + ellipse.getFoci()[0].x + ", " + ellipse.getFoci()[0].y + "), ("
+                + ellipse.getFoci()[1].x + ", " + ellipse.getFoci()[1].y + ")");
+        System.out.println("Расстояние от фокуса до центра: " + ellipse.getDistanceFromFocusToCenter());
+        System.out.println("Большая полуось: " + ellipse.getMajorAxis());
+        System.out.println("Малая полуось: " + ellipse.getMinorAxis());
+        System.out.println("Эксцентриситет: " + ellipse.getEccentricity());
+    
+    // Окружность
+        Point center = new Point(3, 3);
+        double radius = 2;
+        Circle circle = new Circle(center, radius);
+        System.out.println("Центр окружности: (" + circle.getCenter().x + ", " + circle.getCenter().y + ")");
+        System.out.println("Радиус окружности: " + circle.getRadius());
+        System.out.println("Периметр окружности: " + circle.getPerimeter());
+        System.out.println("Площадь окружности: " + circle.getArea());
+     
+     // Прямоугольник
+        Point upperLeft = new Point(0, 10);
+        Point lowerRight = new Point(10, 0);
+        double height = 10;
+        Rectangle rectangle = new Rectangle(upperLeft, lowerRight, height);
+        System.out.println("Центр прямоугольника: (" + center.x + ", " + center.y + ")");
+        double perimeter = rectangle.getPerimeter();
+        System.out.println("Периметр прямоугольника  " + perimeter);
+        double area = rectangle.getArea();
+        System.out.println("Площадь прямоугольника: " + area);
+        double width = rectangle.getWidth();
+        System.out.println("Ширина прямоугольника: " + width);
+        double rectHeight = rectangle.getHeight();
+        System.out.println("Высота прямоугольника: " + rectHeight);
+        double diagonal = rectangle.getDiagonal();
+        System.out.println("Диагональ прямоугольника: " + diagonal);
+     
+      // Квадрат
+        Point topLeft = new Point(0, 4);
+        Point bottomRight = new Point(4, 0);
+        Square square = new Square(topLeft, bottomRight);
+        System.out.println("Сторона квадрата: " + square.getSideLength());
+        System.out.println("Радиус вписанной окружности: " + square.getInscribedCircleRadius());
+        System.out.println("Радиус описанной окружности: " + square.getCircumscribedCircleRadius());
+        System.out.println("Точка центра квадрата: (" + square.getCenter().x + ", " + square.getCenter().y + ")");
+        System.out.println("Периметр квадрата: " + square.getPerimeter());
+        System.out.println("Площадь квадрата: " + square.getArea());
+        // Перемещение квадрата
+        square.move(new Point(1, 0));
+        System.out.println("Новая точка центра квадрата после перемещения: (" + square.getCenter().x + ", " + square.getCenter().y + ")");
+        // Масштабирование квадрата
+        square.scale(2);
+        System.out.println("Новая сторона квадрата после масштабирования x2: " + square.getSideLength());
+        System.out.println("Новый периметр квадрата после масштабирования x2: " + square.getPerimeter());
+        System.out.println("Новая площадь квадрата после масштабирования x2: " + square.getArea());
+     
+     // Треугольник
+     try {
+            Point a = new Point(0, 0);
+            Point b = new Point(4, 0);
+            Point c = new Point(2, 3);
+
+            Triangle triangle = new Triangle(a, b, c);
+
+            System.out.println("Центр треугольника: (" + triangle.getCenter().x + ", " + triangle.getCenter().y + ")");
+            System.out.println("Периметр треугольника: " + triangle.getPerimeter());
+            System.out.println("Площадь треугольника: " + triangle.getArea());
+            System.out.println("Вершины треугольника:");
+            for (Point vertex : triangle.getVertices()) {
+                System.out.println("(" + vertex.x + ", " + vertex.y + ")");
+            }
+            Point incenter = triangle.getIncircleCenter();
+            System.out.println("Центр вписанной окружности: (" + incenter.x + ", " + incenter.y + ")");
+            System.out.println("Радиус вписанной окружности: " + triangle.getIncircleRadius());
+            Point circumcenter = triangle.getCircumcircleCenter();
+            System.out.println("Центр описанной окружности: (" + circumcenter.x + ", " + circumcenter.y + ")");
+            System.out.println("Радиус описанной окружности: " + triangle.getCircumcircleRadius());
+        } catch (InvalidTriangleException e) {
+            System.err.println(e.getMessage());
+        }
+     }
+
+}       
